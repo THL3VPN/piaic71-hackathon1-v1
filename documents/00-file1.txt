@@ -1,0 +1,10 @@
+claudecode[
+    official subscription = 20usd
+    free -> claude code + gemini
+        https://www.youtube.com/watch?time_continue=2&v=Kerha8oWWug&embeds_referring_euri=https%3A%2F%2Fchat.google.com%2F&embeds_referring_origin=https%3A%2F%2Fchat.google.com&source_ve_path=Mjg2NjY
+        api issues , timeout issues , etc
+    free -> claude code + qwen
+        https://github.com/subhankaladi/Claude-Code-Setup/blob/main/qwen_setup_with_claude-cli.md
+        
+    
+]
