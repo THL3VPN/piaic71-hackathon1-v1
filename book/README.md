@@ -1,11 +1,11 @@
-# Website
+# Documentation Site
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+This is the documentation site built with Docusaurus.
 
 ## Installation
 
 ```bash
-yarn
+yarn install
 ```
 
 ## Local Development

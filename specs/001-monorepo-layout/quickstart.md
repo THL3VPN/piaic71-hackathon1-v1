@@ -20,12 +20,19 @@ This guide provides quick instructions for setting up and working with the monor
    ```bash
    # Navigate to book directory and install dependencies
    cd book
-   yarn install
+   npm install
    cd ..
 
    # Navigate to backend directory and install dependencies
    cd backend
+   uv venv
+   source .venv/bin/activate
    uv pip install -r requirements.txt
+   cd ..
+
+   # Navigate to frontend directory and install dependencies
+   cd frontend
+   npm install
    cd ..
    ```
 
@@ -39,17 +46,17 @@ This guide provides quick instructions for setting up and working with the monor
 
 2. Start the development server:
    ```bash
-   yarn start
+   npm start
    ```
 
 3. Build for production:
    ```bash
-   yarn build
+   npm run build
    ```
 
 4. Deploy to GitHub Pages:
    ```bash
-   GIT_USER=<your-github-username> yarn deploy
+   GIT_USER=<your-github-username> npm run deploy
    ```
 
 ### Backend (backend/)
@@ -58,13 +65,15 @@ This guide provides quick instructions for setting up and working with the monor
    cd backend
    ```
 
-2. Start the development server with uv:
+2. Activate the virtual environment and start the development server with uv:
    ```bash
+   source .venv/bin/activate
    uv run python src/main.py
    ```
 
 3. Run tests:
    ```bash
+   source .venv/bin/activate
    python -m pytest tests/
    ```
 
@@ -76,12 +85,12 @@ This guide provides quick instructions for setting up and working with the monor
 
 2. Install dependencies:
    ```bash
-   yarn install
+   npm install
    ```
 
 3. Start development server:
    ```bash
-   yarn start
+   npm start
    ```
 
 ## Environment Configuration
@@ -115,5 +124,6 @@ This guide provides quick instructions for setting up and working with the monor
 
 ## Troubleshooting
 - If documentation build fails, ensure all markdown files have proper frontmatter
-- If backend fails to start, check that all dependencies are installed and environment variables are set
+- If backend fails to start, check that the virtual environment is activated and all dependencies are installed
 - If frontend fails to build, verify all dependencies are installed and paths are correct
+- If you encounter dependency issues, ensure you're using the correct package manager (npm for frontend/book, uv for backend)
