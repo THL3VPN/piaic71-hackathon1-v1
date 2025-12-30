@@ -20,4 +20,16 @@ what i did ?[
     communicated with chatgpt and made a complete plan
     as step1 i added docusours to the cli
         npx create-docusaurus@latest book classic --typescript
+    
+    ## Steps Completed
+
+    1. Initialized a GitHub repository using a monorepo structure for book, frontend, and backend components.
+    2. Created a Docusaurus documentation site in a dedicated `book/` directory.
+    3. Configured Docusaurus for GitHub Pages project deployment.
+    4. Added an initial introduction chapter and verified local rendering.
+    5. Set up a GitHub Actions workflow to build and deploy the book automatically.
+    6. Aligned the deployment workflow with the repository’s default branch.
+    7. Enabled GitHub Pages to serve content from the generated `gh-pages` branch.
+    8. Verified successful deployment and public availability of the book.
+
 ]

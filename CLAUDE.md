@@ -208,3 +208,10 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+
+## Active Technologies
+- Node.js >= 20.0, Python 3.11+ (based on constitution and project requirements) + Docusaurus 3.9.2 for documentation site, FastAPI for backend service, uv for local backend execution (001-monorepo-layout)
+- File-based storage for documentation and specs (no database required for this feature) (001-monorepo-layout)
+
+## Recent Changes
+- 001-monorepo-layout: Added Node.js >= 20.0, Python 3.11+ (based on constitution and project requirements) + Docusaurus 3.9.2 for documentation site, FastAPI for backend service, uv for local backend execution
