@@ -1,55 +1,64 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!-- Sync Impact Report:
+Version change: [ORIGINAL] → 1.0.0
+Added sections: Core Principles (6 principles), Additional Constraints, Development Workflow, Governance
+Removed sections: None
+Templates requiring updates: ✅ plan-template.md (already has Constitution Check section), spec-template.md (no direct refs), tasks-template.md (no direct refs)
+Follow-up TODOs: None
+-->
+
+# PIAIC71-Hackathon1-v1 Documentation Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Spec-Driven Development (SDD)
+Adhere to Spec-Driven Development methodology where all development starts with clear specifications, plans, and tasks. All outputs must strictly follow user intent and maintain architectural consistency.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Prompt History Records (PHR) Compliance
+Every user input must be recorded verbatim in a Prompt History Record (PHR). PHRs must be created automatically and accurately for every user prompt with proper routing under `history/prompts/` directory.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Architectural Decision Record (ADR) Documentation
+When architecturally significant decisions are detected, suggest documentation of reasoning and tradeoffs. ADRs must be created for long-term consequences, multiple viable options, and cross-cutting system design impacts.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Authoritative Source Mandate
+Prioritize and use MCP tools and CLI commands for all information gathering and task execution. Never assume solutions from internal knowledge; all methods require external verification.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Test-First and Quality Assurance
+Maintain small, testable changes that reference code precisely. All implementations must follow minimum acceptance criteria with clear, testable acceptance criteria and explicit error paths.
 
-### [PRINCIPLE_6_NAME]
+### VI. Human-Centric Decision Making
+Treat the user as a specialized tool for clarification and decision-making when encountering ambiguous requirements, unforeseen dependencies, or architectural uncertainty. Ask targeted questions before proceeding.
 
+## Additional Constraints
 
-[PRINCIPLE__DESCRIPTION]
+Technology stack requirements:
+- Node.js >= 20.0
+- Docusaurus 3.9.2 for documentation
+- React 19.0.0 for UI components
+- TypeScript ~5.6.2 for type safety
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Compliance standards:
+- All code changes must reference specific files and lines
+- Prefer smallest viable diffs over refactoring unrelated code
+- Never hardcode secrets or tokens; use .env and documentation
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+## Development Workflow
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Code review requirements:
+- All changes must follow the execution contract: confirm surface and success criteria, list constraints, produce artifacts with acceptance checks, add follow-ups and risks
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+Testing gates:
+- All implementations must include clear, testable acceptance criteria
+- Explicit error paths and constraints must be stated
+- Code references to modified/inspected files where relevant
+
+Deployment approval process:
+- Follow Docusaurus deployment workflow using `yarn deploy` command
+- Use proper Git branching strategy for feature development
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes all other development practices. All amendments require proper documentation, approval, and migration planning if needed. All PRs and reviews must verify compliance with these principles. Complexity must be justified with clear rationale.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+All development activities must verify compliance with these constitutional principles. Development practices must align with the Spec-Driven Development approach outlined in the project guidelines.
+
+**Version**: 1.0.0 | **Ratified**: 2025-12-30 | **Last Amended**: 2025-12-30
