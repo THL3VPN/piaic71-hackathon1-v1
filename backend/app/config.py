@@ -20,6 +20,13 @@ class Settings(BaseSettings):
     # Database connections
     neon_database_url: Optional[str] = None
     qdrant_url: Optional[str] = None
+    qdrant_host: str = "localhost"
+    qdrant_port: int = 6333
+    qdrant_api_key: Optional[str] = None
+
+    # Qdrant vector configuration
+    vector_size: int = 1536
+    distance_metric: str = "Cosine"
 
     # GitHub Pages origin for CORS
     github_pages_origin: str = "https://your-username.github.io"
@@ -34,9 +41,26 @@ class Settings(BaseSettings):
     # Root path (for deployment scenarios)
     root_path: str = ""
 
+    # Ingestion configuration
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
+    max_document_size: int = 10 * 1024 * 1024  # 10MB
+    supported_extensions: List[str] = [".md", ".mdx"]
+    source_directory: str = "../book/docs"
+    progress_refresh_rate: float = 0.1  # seconds
+
+    # RAG Retrieval configuration
+    top_k: int = 5
+    similarity_threshold: float = 0.5
+    max_context_length: int = 3000
+    vector_size: int = 1536
+    chunk_size_limit: int = 1000
+    chunk_overlap_default: int = 200
+
     class Config:
         env_file = ".env"
         env_file_encoding = 'utf-8'
+        extra = 'ignore'  # Ignore extra environment variables not defined in this class
 
 
 # Create global settings instance
@@ -64,6 +88,54 @@ def validate_settings():
 
     if settings.request_timeout <= 0:
         raise ValueError(f"Request timeout must be positive, got {settings.request_timeout}")
+
+    # Validate Qdrant port range
+    if not (1 <= settings.qdrant_port <= 65535):
+        raise ValueError(f"Invalid Qdrant port: {settings.qdrant_port}. Must be between 1 and 65535")
+
+    # Validate vector size
+    if settings.vector_size <= 0:
+        raise ValueError(f"Vector size must be positive, got {settings.vector_size}")
+
+    # Validate distance metric
+    valid_distance_metrics = ["Cosine", "Euclidean", "Dot"]
+    if settings.distance_metric not in valid_distance_metrics:
+        raise ValueError(f"Invalid distance metric: {settings.distance_metric}. Must be one of {valid_distance_metrics}")
+
+    # Validate ingestion settings
+    if settings.chunk_size <= 0:
+        raise ValueError(f"Chunk size must be positive, got {settings.chunk_size}")
+
+    if settings.chunk_overlap < 0:
+        raise ValueError(f"Chunk overlap cannot be negative, got {settings.chunk_overlap}")
+
+    if settings.max_document_size <= 0:
+        raise ValueError(f"Max document size must be positive, got {settings.max_document_size}")
+
+    if not settings.supported_extensions:
+        raise ValueError("At least one supported extension must be specified")
+
+    if not settings.source_directory:
+        raise ValueError("Source directory must be specified")
+
+    # Validate RAG parameters
+    if settings.top_k <= 0:
+        raise ValueError(f"Top K must be positive, got {settings.top_k}")
+
+    if not (0.0 <= settings.similarity_threshold <= 1.0):
+        raise ValueError(f"Similarity threshold must be between 0.0 and 1.0, got {settings.similarity_threshold}")
+
+    if settings.max_context_length <= 0:
+        raise ValueError(f"Max context length must be positive, got {settings.max_context_length}")
+
+    if settings.vector_size <= 0:
+        raise ValueError(f"Vector size must be positive, got {settings.vector_size}")
+
+    if settings.chunk_size_limit <= 0:
+        raise ValueError(f"Chunk size limit must be positive, got {settings.chunk_size_limit}")
+
+    if settings.chunk_overlap_default < 0:
+        raise ValueError(f"Chunk overlap cannot be negative, got {settings.chunk_overlap_default}")
 
 
 # Validate settings on import

@@ -50,8 +50,7 @@ def test_cors_config_with_github_pages_origin():
         github_pages_origin: str = "https://testuser.github.io"
 
         class Config:
-            env_file = ".env"
-            env_file_encoding = 'utf-8'
+            extra = 'ignore'  # Ignore extra environment variables not defined in this class
 
     test_settings = TestSettings()
     cors_config = get_cors_config(test_settings)
