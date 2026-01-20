@@ -35,13 +35,13 @@ class RetrievalService:
         Returns:
             Embedding vector as a list of floats
         """
-        # In a real implementation, this would call an embedding model
-        # For now, return a placeholder vector of the correct size
-        return [0.0] * settings.vector_size
+        from .embedding_service import EmbeddingService
+        embedding_service = EmbeddingService()
+        return embedding_service.embed_text(question)
 
     def perform_vector_search(self, query_vector: List[float], top_k: int = None) -> List[dict]:
         """
-        Perform vector similarity search in Qdrant.
+        Perform vector similarity search in Qdrant with fallback to database search.
 
         Args:
             query_vector: The query embedding vector
@@ -53,23 +53,92 @@ class RetrievalService:
         if top_k is None:
             top_k = settings.top_k
 
-        # Perform search in Qdrant
-        search_results = qdrant_service.search(
-            collection_name=settings.qdrant_collection_name,
-            query_vector=query_vector,
-            limit=top_k
-        )
+        # First, try to search in Qdrant
+        try:
+            search_results = qdrant_service.search_similar(
+                query_vector=query_vector,
+                limit=top_k
+            )
 
-        # Format results
-        formatted_results = []
-        for result in search_results:
-            formatted_results.append({
-                'id': result.id,
-                'score': result.score,
-                'payload': result.payload
-            })
+            # Format results
+            formatted_results = []
+            for result in search_results:
+                formatted_results.append({
+                    'id': result['chunk_id'],
+                    'score': result['score'],
+                    'payload': result.get('payload', {})
+                })
 
-        return formatted_results
+            # If we found results in Qdrant, return them
+            if formatted_results:
+                return formatted_results
+
+        except Exception as e:
+            # If Qdrant search fails, log the error and fall back to database search
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Qdrant search failed: {e}. Falling back to database similarity search.")
+
+        # Fall back to database similarity search
+        return self._perform_database_similarity_search(query_vector, top_k)
+
+    def _perform_database_similarity_search(self, query_vector: List[float], top_k: int) -> List[dict]:
+        """
+        Perform similarity search using vectors stored in the database.
+
+        Args:
+            query_vector: The query embedding vector
+            top_k: Number of top results to return
+
+        Returns:
+            List of search results with chunk IDs and similarity scores
+        """
+        import json
+        import numpy as np
+
+        # Get all chunks that have vectors stored in the database
+        all_chunks = self.chunk_repository.get_all()
+
+        scored_results = []
+        query_array = np.array(query_vector)
+
+        for chunk in all_chunks:
+            if chunk.vector:  # Only process chunks that have vectors
+                try:
+                    # Deserialize the vector from JSON string
+                    chunk_vector = json.loads(chunk.vector)
+                    chunk_array = np.array(chunk_vector)
+
+                    # Calculate cosine similarity
+                    dot_product = np.dot(query_array, chunk_array)
+                    norm_query = np.linalg.norm(query_array)
+                    norm_chunk = np.linalg.norm(chunk_array)
+
+                    if norm_query != 0 and norm_chunk != 0:
+                        similarity = dot_product / (norm_query * norm_chunk)
+
+                        # Create result with required fields
+                        result = {
+                            'id': str(chunk.id),
+                            'score': float(similarity),
+                            'payload': {
+                                'document_id': str(chunk.document_id),
+                                'source_path': '',  # source_path may not be available directly
+                                'title': '',  # title may not be available directly
+                                'chunk_index': chunk.chunk_index,
+                                'content': chunk.chunk_text
+                            }
+                        }
+                        scored_results.append(result)
+                except Exception:
+                    # Skip chunks with malformed vectors
+                    continue
+
+        # Sort by similarity score in descending order
+        scored_results.sort(key=lambda x: x['score'], reverse=True)
+
+        # Return top_k results
+        return scored_results[:top_k]
 
     def fetch_chunks_by_ids(self, chunk_ids: List[str]) -> List[Chunk]:
         """
@@ -83,7 +152,16 @@ class RetrievalService:
         """
         if not self.chunk_repository:
             raise ValueError("Database session not provided to retrieval service")
-        return self.chunk_repository.get_by_ids(chunk_ids)
+
+        # Convert string IDs to UUIDs and fetch individually
+        import uuid
+        chunks = []
+        for chunk_id in chunk_ids:
+            chunk_uuid = uuid.UUID(chunk_id) if isinstance(chunk_id, str) else chunk_id
+            chunk = self.chunk_repository.get_by_id(chunk_uuid)
+            if chunk:
+                chunks.append(chunk)
+        return chunks
 
     def has_low_confidence_results(self, results: List[dict], threshold: float = None) -> bool:
         """

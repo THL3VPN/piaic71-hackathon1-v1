@@ -212,6 +212,20 @@ See `.specify/memory/constitution.md` for code quality, testing, performance, se
 ## Active Technologies
 - Node.js >= 20.0, Python 3.11+ (based on constitution and project requirements) + Docusaurus 3.9.2 for documentation site, FastAPI for backend service, uv for local backend execution (001-monorepo-layout)
 - File-based storage for documentation and specs (no database required for this feature) (001-monorepo-layout)
+- Python 3.11+ (for compatibility with uv and FastAPI) + FastAPI for web framework, uv for dependency management, Uvicorn for ASGI server (003-backend-skeleton)
+- Environment variables for configuration (no persistent storage initially) (003-backend-skeleton)
+- Python 3.11 (based on existing backend infrastructure) + psycopg2-binary, SQLAlchemy, Alembic for database operations and migrations (004-db-schema-neon)
+- PostgreSQL via Neon serverless database platform with JSONB support (004-db-schema-neon)
+- Python 3.11 (based on existing backend infrastructure) + FastAPI, SQLAlchemy, Qdrant Python client (qdrant-client), Pydantic (005-qdrant-collections)
+- PostgreSQL via Neon database (existing), Qdrant vector database (new requirement) (005-qdrant-collections)
+- Python 3.11 + Typer (CLI), markdown-it-py (markdown processing), SQLAlchemy (database), Qdrant client (vector database), Rich (progress output) (006-ingestion-cli)
+- PostgreSQL via Neon (documents and chunks), Qdrant (vector embeddings) (006-ingestion-cli)
+- Python 3.11 + FastAPI (web framework), Qdrant client (vector database), SQLAlchemy (database ORM), OpenAI/Anthropic API (LLM), Sentence Transformers (embedding models), uv (dependency management) (007-rag-retrieval)
+- PostgreSQL via Neon (document chunks with metadata), Qdrant (vector embeddings for similarity search) (007-rag-retrieval)
+- Python 3.11 + FastAPI (web framework), SQLAlchemy (ORM), Qdrant client (vector database), Pydantic (data validation), Typer (CLI), markdown-it-py (markdown processing), mdit-py-plugins (frontmatter), Rich (progress output), pytest (testing) (008-chat-api)
+- PostgreSQL via Neon (chat sessions and messages), Qdrant (vector embeddings for similarity search) (008-chat-api)
+- JavaScript/TypeScript (React 19.0.0) + React 19.0.0, Docusaurus 3.9.2, Node.js >= 20.0 (011-frontend-chat-widget)
+- N/A (client-side only component) (011-frontend-chat-widget)
 
 ## Recent Changes
 - 001-monorepo-layout: Added Node.js >= 20.0, Python 3.11+ (based on constitution and project requirements) + Docusaurus 3.9.2 for documentation site, FastAPI for backend service, uv for local backend execution

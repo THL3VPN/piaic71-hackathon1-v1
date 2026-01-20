@@ -49,7 +49,7 @@ class HallucinationGuard:
         Check if retrieval results have low confidence scores.
 
         Args:
-            results: List of retrieval results with scores
+            results: List of retrieval results with scores (can be dicts or Chunk objects)
             threshold: Confidence threshold (uses default if not provided)
 
         Returns:
@@ -63,7 +63,15 @@ class HallucinationGuard:
 
         # Check if any result meets the confidence threshold
         for result in results:
-            score = result.get('score', 0)
+            # Handle both dictionary results and Chunk objects
+            if isinstance(result, dict):
+                score = result.get('score', 0)
+            else:
+                # If it's a Chunk object, we can't determine its similarity score
+                # This case shouldn't normally happen if the retrieval service works correctly
+                # but we handle it for robustness
+                score = 0  # Assume low confidence for Chunk objects
+
             if score >= threshold:
                 return False  # Found at least one high-confidence result
 

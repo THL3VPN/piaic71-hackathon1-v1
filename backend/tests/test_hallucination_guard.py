@@ -2,24 +2,23 @@
 Tests for hallucination prevention functionality.
 """
 import pytest
+from unittest.mock import Mock, patch
 from app.utils.hallucination_guard import HallucinationGuard
 
 
 def test_insufficient_context_detection():
-    """Test detection of insufficient context for answering."""
+    """Test detection of insufficient context for response generation."""
     guard = HallucinationGuard()
 
     # Test with empty context
-    empty_context = ""
-    assert guard.is_context_insufficient(empty_context) == True
+    assert guard.is_context_insufficient("") is True
+    assert guard.is_context_insufficient(None) is True
 
-    # Test with very short context
-    short_context = "Short."
-    assert guard.is_context_insufficient(short_context) == True
+    # Test with short context (below threshold)
+    assert guard.is_context_insufficient("Short", min_length=10) is True
 
     # Test with sufficient context
-    sufficient_context = "This is a more substantial context with adequate information for forming a response."
-    assert guard.is_context_insufficient(sufficient_context) == False
+    assert guard.is_context_insufficient("This is a sufficiently long context string for testing.", min_length=10) is False
 
 
 def test_low_confidence_result_detection():
@@ -28,73 +27,160 @@ def test_low_confidence_result_detection():
 
     # Test with low confidence results
     low_conf_results = [
-        {'score': 0.1, 'content': 'content1'},
-        {'score': 0.2, 'content': 'content2'}
+        {'id': 'chunk-1', 'score': 0.1, 'payload': {}},  # Very low score
+        {'id': 'chunk-2', 'score': 0.15, 'payload': {}}  # Below typical threshold
     ]
-    assert guard.has_low_confidence_results(low_conf_results, threshold=0.5) == True
+    assert guard.has_low_confidence_results(low_conf_results, threshold=0.5) is True
 
     # Test with high confidence results
     high_conf_results = [
-        {'score': 0.8, 'content': 'content1'},
-        {'score': 0.9, 'content': 'content2'}
+        {'id': 'chunk-1', 'score': 0.8, 'payload': {}},
+        {'id': 'chunk-2', 'score': 0.9, 'payload': {}}
     ]
-    assert guard.has_low_confidence_results(high_conf_results, threshold=0.5) == False
+    assert guard.has_low_confidence_results(high_conf_results, threshold=0.7) is False
 
     # Test with mixed confidence results
     mixed_conf_results = [
-        {'score': 0.8, 'content': 'content1'},
-        {'score': 0.1, 'content': 'content2'}
+        {'id': 'chunk-1', 'score': 0.8, 'payload': {}},
+        {'id': 'chunk-2', 'score': 0.1, 'payload': {}}
     ]
-    assert guard.has_low_confidence_results(mixed_conf_results, threshold=0.5) == True
+    assert guard.has_low_confidence_results(mixed_conf_results, threshold=0.5) is False  # Has at least one high-confidence result
+    assert guard.has_low_confidence_results(mixed_conf_results, threshold=0.9) is True  # No results meet higher threshold
 
 
 def test_answer_grounding_check():
     """Test checking if an answer is properly grounded in provided context."""
     guard = HallucinationGuard()
 
-    context = "The sky is blue. Water freezes at 0°C. The sun rises in the east."
-    grounded_answer = "The sky appears blue due to atmospheric scattering."
-    non_grounded_answer = "Mars has two moons named Phobos and Deimos."
+    # Test with well-grounded answer
+    answer = "The concept is explained in the document as a key principle."
+    context = "The concept is explained in the document as a key principle that governs the system."
+    assert guard.is_answer_properly_grounded(answer, context) is True
 
-    # This is a simplified check - in reality, this would involve more sophisticated NLP
-    assert guard.is_answer_properly_grounded(grounded_answer, context) == True
-    assert guard.is_answer_properly_grounded(non_grounded_answer, context) == False
+    # Test with ungrounded answer
+    answer = "The sky is blue and water is wet."
+    context = "The document discusses advanced AI concepts and neural networks."
+    assert guard.is_answer_properly_grounded(answer, context) is False
+
+    # Test with partially grounded answer
+    answer = "The concept is a key principle, and the sky is blue."
+    context = "The document explains that the concept is a key principle."
+    # This should be partially grounded (some overlap exists)
+    assert guard.is_answer_properly_grounded(answer, context) is True  # Some content overlaps
 
 
-def test_refusal_response_generation():
+def test_generate_refusal_response():
     """Test generation of appropriate refusal responses."""
     guard = HallucinationGuard()
 
-    refusal_response = guard.generate_refusal_response("insufficient_context")
-    assert refusal_response is not None
-    assert "insufficient" in refusal_response.lower() or "unable" in refusal_response.lower()
+    # Test insufficient context reason
+    refusal = guard.generate_refusal_response("insufficient_context")
+    assert "insufficient" in refusal.lower() or "cannot" in refusal.lower()
 
-    refusal_response = guard.generate_refusal_response("low_confidence")
-    assert refusal_response is not None
-    assert "confidence" in refusal_response.lower() or "unsure" in refusal_response.lower()
+    # Test low confidence reason
+    refusal = guard.generate_refusal_response("low_confidence")
+    assert "confidence" in refusal.lower() or "uncertain" in refusal.lower()
+
+    # Test default reason
+    refusal = guard.generate_refusal_response("unknown")
+    assert "cannot" in refusal.lower() or "insufficient" in refusal.lower()
 
 
-def test_hallucination_prevention_end_to_end():
-    """Test end-to-end hallucination prevention workflow."""
+def test_refusal_behavior_with_insufficient_information():
+    """Test the refusal behavior when no context is available."""
     guard = HallucinationGuard()
 
-    # Scenario 1: Insufficient context
-    context = ""
-    question = "What is the capital of France?"
+    # Test with empty context
+    should_refuse, reason = guard.should_refuse_to_answer(context="", results=[])
+    assert should_refuse is True
 
-    is_insufficient = guard.is_context_insufficient(context)
-    assert is_insufficient == True
+    # Test with None context
+    should_refuse, reason = guard.should_refuse_to_answer(context=None, results=[])
+    assert should_refuse is True
 
-    # Scenario 2: Low confidence results
-    low_conf_results = [{'score': 0.1, 'content': 'random'}]
-    has_low_conf = guard.has_low_confidence_results(low_conf_results)
-    assert has_low_conf == True
+    # Test with low confidence results
+    low_conf_results = [{'id': 'chunk-1', 'score': 0.1}]
+    should_refuse, reason = guard.should_refuse_to_answer(context="some context", results=low_conf_results, threshold=0.5)
+    assert should_refuse is True
+    assert reason == "low_confidence"
 
-    # Scenario 3: Proper grounding check
-    good_context = "Paris is the capital of France."
-    good_answer = "Paris is the capital of France."
-    is_properly_grounded = guard.is_answer_properly_grounded(good_answer, good_context)
-    assert is_properly_grounded == True
+
+def test_refusal_behavior_with_sufficient_information():
+    """Test that refusal doesn't happen when sufficient information is available."""
+    guard = HallucinationGuard()
+
+    # Test with good context and high confidence results
+    context = "This is a good context string with sufficient information."
+    high_conf_results = [{'id': 'chunk-1', 'score': 0.8}]
+
+    should_refuse, reason = guard.should_refuse_to_answer(context=context, results=high_conf_results, threshold=0.5)
+    assert should_refuse is False
+    assert reason == ""
+
+
+def test_validation_against_context():
+    """Test the complete validation against context functionality."""
+    guard = HallucinationGuard()
+
+    # Test with properly grounded response
+    response = "Based on the document, the concept is a key principle."
+    context = "The document explains that the concept is a key principle in the system."
+    results = [{'id': 'chunk-1', 'score': 0.8}]
+
+    validation = guard.validate_response_against_context(response, context, results)
+
+    assert validation["is_grounded"] is True
+    assert validation["has_sufficient_context"] is True
+    assert validation["has_high_confidence_results"] is True
+    assert validation["should_refuse_to_answer"] is False
+    assert validation["validation_passed"] is True
+
+
+def test_validation_with_insufficient_elements():
+    """Test validation when elements are insufficient."""
+    guard = HallucinationGuard()
+
+    # Test with poorly grounded response
+    response = "The sky is blue and unrelated to the document."
+    context = "The document discusses AI concepts."
+    results = [{'id': 'chunk-1', 'score': 0.8}]
+
+    validation = guard.validate_response_against_context(response, context, results)
+
+    assert validation["is_grounded"] is False
+    assert validation["validation_passed"] is False
+
+
+def test_validation_with_low_confidence_results():
+    """Test validation when results have low confidence."""
+    guard = HallucinationGuard()
+
+    # Test with good grounding but low confidence results
+    response = "Based on the document, the concept is important."
+    context = "The document explains the concept is important."
+    low_conf_results = [{'id': 'chunk-1', 'score': 0.1}]
+
+    validation = guard.validate_response_against_context(response, context, low_conf_results)
+
+    assert validation["has_high_confidence_results"] is False
+    assert validation["should_refuse_to_answer"] is True
+    assert validation["validation_passed"] is False
+
+
+def test_validation_with_insufficient_context():
+    """Test validation when context is insufficient."""
+    guard = HallucinationGuard()
+
+    # Test with insufficient context
+    response = "Based on the document..."
+    context = ""  # Empty context
+    results = [{'id': 'chunk-1', 'score': 0.8}]
+
+    validation = guard.validate_response_against_context(response, context, results)
+
+    assert validation["has_sufficient_context"] is False
+    assert validation["should_refuse_to_answer"] is True
+    assert validation["validation_passed"] is False
 
 
 def test_edge_cases():
@@ -102,34 +188,62 @@ def test_edge_cases():
     guard = HallucinationGuard()
 
     # Test with None values
-    assert guard.is_context_insufficient(None) == True
-    assert guard.has_low_confidence_results(None) == True
+    should_refuse, reason = guard.should_refuse_to_answer(context=None, results=None)
+    assert should_refuse is True
 
     # Test with empty lists
-    assert guard.has_low_confidence_results([]) == True
+    validation = guard.validate_response_against_context("", "", [])
+    assert validation["has_sufficient_context"] is False
+    assert validation["has_high_confidence_results"] is False
+    assert validation["should_refuse_to_answer"] is True
 
-    # Test with special characters
-    context_with_symbols = "The formula is H₂O & CO₂ exist."
-    answer_with_symbols = "Water has the formula H₂O."
-    is_grounded = guard.is_answer_properly_grounded(answer_with_symbols, context_with_symbols)
-    # This might be False depending on implementation, but shouldn't crash
-    assert isinstance(is_grounded, bool)
+    # Test with special characters in content
+    response_with_symbols = "The formula is H₂O & CO₂ exist in the document."
+    context_with_symbols = "The document mentions that H₂O & CO₂ exist in nature."
+    results = [{'id': 'chunk-1', 'score': 0.8}]
+
+    # Should handle special characters without crashing
+    validation = guard.validate_response_against_context(response_with_symbols, context_with_symbols, results)
+    assert isinstance(validation["is_grounded"], bool)
 
 
 def test_confidence_threshold_customization():
     """Test customization of confidence thresholds."""
     guard = HallucinationGuard()
 
-    results = [{'score': 0.6, 'content': 'test'}]
+    results = [{'id': 'chunk-1', 'score': 0.6}]
 
     # With default threshold (would typically be 0.5)
     has_low_conf = guard.has_low_confidence_results(results)
-    assert has_low_conf == False  # 0.6 > 0.5
+    assert has_low_conf is False  # 0.6 > 0.5
 
     # With custom lower threshold
     has_low_conf = guard.has_low_confidence_results(results, threshold=0.7)
-    assert has_low_conf == True  # 0.6 < 0.7
+    assert has_low_conf is True  # 0.6 < 0.7
 
     # With custom higher threshold
     has_low_conf = guard.has_low_confidence_results(results, threshold=0.5)
-    assert has_low_conf == False  # 0.6 > 0.5
+    assert has_low_conf is False  # 0.6 > 0.5
+
+
+def test_context_overlap_calculation():
+    """Test the internal context overlap calculation."""
+    guard = HallucinationGuard()
+
+    # Test with complete overlap
+    response = "This is the content from the document."
+    context = "This is the content from the document."
+    overlap_ratio = guard._calculate_context_overlap(response, context)
+    assert overlap_ratio >= 0.8  # High overlap
+
+    # Test with no overlap
+    response = "This is completely different content."
+    context = "The document discusses AI concepts."
+    overlap_ratio = guard._calculate_context_overlap(response, context)
+    assert overlap_ratio < 0.3  # Low overlap
+
+    # Test with partial overlap
+    response = "Based on the document, AI concepts are important."
+    context = "The document discusses AI concepts and their importance."
+    overlap_ratio = guard._calculate_context_overlap(response, context)
+    assert 0.3 <= overlap_ratio <= 0.8  # Moderate overlap

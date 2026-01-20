@@ -14,9 +14,15 @@ class EmbeddingService:
     def __init__(self):
         """
         Initialize the embedding service.
-        In a real implementation, this would initialize the embedding model.
+        This will initialize the embedding model.
         """
-        self.model = None  # Would be initialized with actual embedding model in production
+        try:
+            from sentence_transformers import SentenceTransformer
+            # Force CPU usage to avoid CUDA compatibility issues
+            self.model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')  # Lightweight model
+        except ImportError:
+            raise ImportError("Please install sentence-transformers: pip install sentence-transformers")
+
         self.vector_size = settings.vector_size
 
     def embed_text(self, text: str) -> List[float]:
@@ -29,22 +35,13 @@ class EmbeddingService:
         Returns:
             Embedding vector as list of floats
         """
-        # In a real implementation, this would call the embedding model
-        # For now, return a placeholder vector of the correct size
-        # In practice, this would be something like:
-        # return self.model.encode(text).tolist()
+        if not text.strip():
+            # Return zero vector for empty text
+            return [0.0] * self.vector_size
 
-        # Generate a deterministic vector based on text content for consistent results
-        # This is a placeholder implementation
-        text_hash = hash(text) % (2**32)
-        vector = []
-        for i in range(self.vector_size):
-            # Create a pseudo-random but deterministic value based on text and position
-            val = ((text_hash * (i + 1)) % 10000) / 10000.0  # Normalize to [0, 1]
-            val = (val * 2) - 1  # Normalize to [-1, 1]
-            vector.append(val)
-
-        return vector
+        # Use the actual embedding model
+        embedding = self.model.encode([text], convert_to_numpy=True)[0]
+        return embedding.tolist()
 
     def embed_batch(self, texts: List[str]) -> List[List[float]]:
         """
@@ -56,7 +53,29 @@ class EmbeddingService:
         Returns:
             List of embedding vectors
         """
-        return [self.embed_text(text) for text in texts]
+        if not texts:
+            return []
+
+        # Filter out empty texts
+        non_empty_texts = [text for text in texts if text.strip()]
+        if not non_empty_texts:
+            return [[0.0] * self.vector_size] * len(texts)
+
+        # Get embeddings for non-empty texts
+        embeddings = self.model.encode(non_empty_texts, convert_to_numpy=True)
+        embedding_list = [embedding.tolist() for embedding in embeddings]
+
+        # Handle case where some texts were empty by inserting zero vectors
+        result = []
+        text_idx = 0
+        for text in texts:
+            if text.strip():
+                result.append(embedding_list[text_idx])
+                text_idx += 1
+            else:
+                result.append([0.0] * self.vector_size)
+
+        return result
 
     def normalize_vector(self, vector: List[float]) -> List[float]:
         """

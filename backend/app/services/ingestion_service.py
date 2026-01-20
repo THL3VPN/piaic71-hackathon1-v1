@@ -108,22 +108,22 @@ class IngestionService:
         # Process and store chunks
         chunk_models = []
         for chunk in chunks:
-            # Create chunk in database
+            # Compute embedding first
+            embedding = self.compute_embedding(chunk.content)
+
+            # Create chunk in database with vector
             chunk_model = self.chunk_repo.create(
                 document_id=document.id,
                 chunk_index=chunk.index,
                 chunk_text=chunk.content,
                 chunk_hash=chunk.id,
+                vector=embedding,  # Store the vector in the database
                 metadata=None  # Add metadata if needed
             )
             chunk_models.append(chunk_model)
 
             # Upsert chunk to Qdrant
             try:
-                # Compute embedding (this would typically call an embedding service)
-                # For now, we'll use a placeholder - in real implementation, this would call an embedding model
-                embedding = self.compute_embedding(chunk.content)
-
                 # Upsert to Qdrant
                 qdrant_service.upsert_point(
                     chunk_id=chunk.id,
@@ -144,7 +144,7 @@ class IngestionService:
 
     def compute_embedding(self, text: str) -> List[float]:
         """
-        Compute embedding for text. This is a placeholder implementation.
+        Compute embedding for text using the real embedding service.
 
         Args:
             text: Text to embed
@@ -152,10 +152,12 @@ class IngestionService:
         Returns:
             Embedding vector as list of floats
         """
-        # In a real implementation, this would call an embedding model
-        # For now, return a placeholder vector of the correct size
-        # The size should match the configured vector_size in settings
-        return [0.0] * settings.vector_size
+        # Initialize embedding service to compute real embeddings
+        from .embedding_service import EmbeddingService
+        embedding_service = EmbeddingService()
+
+        # Compute embedding using the real model
+        return embedding_service.embed_text(text)
 
     def run_ingestion_pipeline(self, directory_path: str = None) -> Dict[str, Any]:
         """

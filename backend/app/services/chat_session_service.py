@@ -21,17 +21,18 @@ class ChatSessionService:
     """
 
     @staticmethod
-    def create_session(db: Session) -> ChatSession:
+    def create_session(db: Session, metadata: Optional[dict] = None) -> ChatSession:
         """
         Create a new chat session in the database.
 
         Args:
             db: Database session
+            metadata: Optional metadata for the session
 
         Returns:
             ChatSession: Created chat session instance
         """
-        session = ChatSession()
+        session = ChatSession(session_metadata=metadata)
         db.add(session)
         try:
             db.commit()
@@ -53,7 +54,7 @@ class ChatSessionService:
         Returns:
             ChatSession: Chat session instance if found, None otherwise
         """
-        return db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        return db.query(ChatSession).filter(ChatSession.session_id == session_id).first()
 
     @staticmethod
     def get_all_sessions(db: Session, skip: int = 0, limit: int = 100) -> List[ChatSession]:
@@ -83,7 +84,7 @@ class ChatSessionService:
         Returns:
             ChatSession: Updated chat session instance if found, None otherwise
         """
-        session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        session = db.query(ChatSession).filter(ChatSession.session_id == session_id).first()
         if session:
             for key, value in kwargs.items():
                 if hasattr(session, key):
@@ -105,7 +106,7 @@ class ChatSessionService:
         Returns:
             bool: True if session was deleted, False if not found
         """
-        session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        session = db.query(ChatSession).filter(ChatSession.session_id == session_id).first()
         if session:
             db.delete(session)
             db.commit()
@@ -124,4 +125,4 @@ class ChatSessionService:
         Returns:
             bool: True if session exists, False otherwise
         """
-        return db.query(ChatSession).filter(ChatSession.id == session_id).count() > 0
+        return db.query(ChatSession).filter(ChatSession.session_id == session_id).count() > 0

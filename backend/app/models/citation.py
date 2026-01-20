@@ -1,47 +1,69 @@
 """
-Citation model for the RAG system.
+Citation model for the backend service.
+
+This module defines the SQLAlchemy model for citations that link
+to specific parts of documents, including source path, title, and chunk index.
 """
-from sqlalchemy import Column, String, Text, DateTime, Integer, UUID, ForeignKey
+from sqlalchemy import String, Text, DateTime, func, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import declarative_base, relationship
-from datetime import datetime
 import uuid
+from typing import Optional
+
+from .base import BaseMixin
+from ..database.connection import Base
 
 
-Base = declarative_base()
-
-
-class Citation(Base):
+class Citation(Base, BaseMixin):
     """
-    Represents a citation for a retrieved chunk with source information.
+    SQLAlchemy model representing a citation in the system.
+
+    This model stores citation information that links to specific parts of documents,
+    including source path, title, chunk index, and snippet for reference purposes.
     """
     __tablename__ = "citations"
 
-    citation_id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    bundle_id = Column(PG_UUID(as_uuid=True), ForeignKey("context_bundles.bundle_id"), nullable=False)
-    chunk_id = Column(PG_UUID(as_uuid=True), ForeignKey("chunks.id"), nullable=False)  # Assuming chunk IDs are UUIDs
-    source_path = Column(String(500), nullable=False)  # Path to the source document
-    heading = Column(String(200), nullable=True)  # Heading where chunk appears
-    chunk_index = Column(Integer, nullable=False)  # Index of chunk in document
-    citation_text = Column(Text, nullable=True)  # Formatted citation string
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # Message reference - foreign key to chat_messages table
+    message_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("chat_messages.id", ondelete="CASCADE"),
+        nullable=False
+    )
 
-    # Relationships
-    bundle = relationship("ContextBundle", back_populates="citations")
-    chunk = relationship("Chunk", back_populates="citations")  # Assuming Chunk model exists
+    # Path to the source document
+    source_path: Mapped[str] = mapped_column(String(500), nullable=False)
+
+    # Title of the document section
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+
+    # Index of the chunk in the document
+    chunk_index: Mapped[int] = mapped_column(nullable=False)
+
+    # Short text snippet from the source
+    snippet: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     def __repr__(self):
-        return f"<Citation(id={self.citation_id}, source_path='{self.source_path}', chunk_index={self.chunk_index})>"
+        """
+        String representation of the Citation instance.
 
-    def to_dict(self):
-        """Convert the citation to a dictionary representation."""
+        Returns:
+            str: String representation showing citation ID, source path, and chunk index
+        """
+        return f"<Citation(id={self.id}, source_path={self.source_path}, chunk_index={self.chunk_index})>"
+
+    def to_dict(self) -> dict:
+        """
+        Convert the Citation instance to a dictionary.
+
+        Returns:
+            dict: Dictionary representation of the citation
+        """
         return {
-            "citation_id": str(self.citation_id),
-            "bundle_id": str(self.bundle_id),
-            "chunk_id": str(self.chunk_id),
+            "id": str(self.id),
+            "message_id": str(self.message_id),
             "source_path": self.source_path,
-            "heading": self.heading,
+            "title": self.title,
             "chunk_index": self.chunk_index,
-            "citation_text": self.citation_text,
+            "snippet": self.snippet,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }

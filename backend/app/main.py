@@ -4,13 +4,20 @@ Main FastAPI application for the backend service.
 This module initializes the FastAPI application with proper configuration,
 middleware, and API routes for health and readiness endpoints.
 """
+import os
 import logging
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Load environment variables from .env file
+load_dotenv()
 
 from .config import Settings, validate_settings
 from . import health
 from .middleware.cors import get_cors_config
+from .services.qdrant_service import qdrant_service
+from .api import vector, chat
 
 # Load and validate settings at startup
 settings = Settings()
@@ -50,6 +57,26 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router, prefix="", tags=["health"])
+app.include_router(vector.router, prefix="/api", tags=["vector"])
+app.include_router(chat.router, prefix="/api", tags=["chat"])
+
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Initialize Qdrant collection on application startup.
+    """
+    logger.info("Initializing Qdrant collection...")
+    try:
+        # Create the Qdrant collection if it doesn't exist
+        success = qdrant_service.create_collection()
+        if success:
+            logger.info("Qdrant collection initialized successfully")
+        else:
+            logger.error("Failed to initialize Qdrant collection")
+    except Exception as e:
+        logger.error(f"Error initializing Qdrant collection: {str(e)}")
+
 
 @app.get("/")
 async def root():

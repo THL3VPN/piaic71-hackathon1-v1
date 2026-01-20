@@ -123,3 +123,66 @@ class RetrievalStatsResponse(BaseModel):
     average_chunks_retrieved: int
     refusal_rate: float
     most_common_refusal_reasons: List[str]
+
+
+class ChatRequest(BaseModel):
+    """
+    Request model for chat queries.
+    """
+    message: str = Field(
+        ...,
+        description="The user's message/question to the chatbot",
+        example="What is this book about?"
+    )
+    session_id: Optional[str] = Field(
+        None,
+        description="Session ID to continue a conversation, or null to start a new session",
+        example="123e4567-e89b-12d3-a456-426614174000"
+    )
+    top_k: Optional[int] = Field(
+        None,
+        ge=1,
+        le=20,
+        description="Number of top results to retrieve (defaults to system setting)",
+        example=5
+    )
+    similarity_threshold: Optional[float] = Field(
+        None,
+        ge=0.0,
+        le=1.0,
+        description="Minimum similarity score threshold (defaults to system setting)",
+        example=0.5
+    )
+
+
+class ChatResponse(BaseModel):
+    """
+    Response model for chat queries.
+    """
+    session_id: str = Field(
+        ...,
+        description="The session ID for the conversation",
+        example="123e4567-e89b-12d3-a456-426614174000"
+    )
+    answer: str = Field(
+        ...,
+        description="The chatbot's answer to the user's question",
+        example="This book covers concepts related to artificial intelligence..."
+    )
+    citations: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of citations showing sources of information",
+        example=[
+            {
+                "source_path": "/book/docs/intro.md",
+                "title": "Introduction",
+                "chunk_index": 0,
+                "snippet": "The book introduces key concepts in AI..."
+            }
+        ]
+    )
+    retrieved_chunks_count: int = Field(
+        0,
+        description="Number of chunks retrieved from the knowledge base",
+        example=3
+    )

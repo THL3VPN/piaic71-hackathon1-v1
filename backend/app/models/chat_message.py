@@ -2,12 +2,13 @@
 Chat message model for the backend service.
 
 This module defines the SQLAlchemy model for chat messages,
-including fields for session reference, role, content, and timestamps.
+including fields for session reference, role, content, citations, and timestamps.
 """
-from sqlalchemy import String, Text, DateTime, func, ForeignKey
+from sqlalchemy import String, Text, DateTime, func, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 import uuid
+from typing import Optional, List, Dict, Any
 
 from .base import BaseMixin
 from ..database.connection import Base
@@ -19,22 +20,26 @@ class ChatMessage(Base, BaseMixin):
     SQLAlchemy model representing a chat message in the system.
 
     This model stores chat message information including the session it belongs to,
-    the role (user, assistant, system), the content of the message, and timestamps.
+    the role (user, assistant), the content of the message, citations for assistant responses,
+    and timestamps for tracking when messages were created.
     """
     __tablename__ = "chat_messages"
 
     # Session reference - foreign key to chat_sessions table
     session_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("chat_sessions.id", ondelete="CASCADE"),
+        PG_UUID(as_uuid=True),
+        ForeignKey("chat_sessions.session_id", ondelete="CASCADE"),
         nullable=False
     )
 
-    # Role of the message sender (user, assistant, system)
+    # Role of the message sender (user or assistant)
     role: Mapped[str] = mapped_column(String(20), nullable=False)
 
     # Content of the message
     content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Citations for assistant responses (JSON array of citation objects)
+    citations: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSON, nullable=True)
 
     def __repr__(self):
         """
@@ -57,5 +62,6 @@ class ChatMessage(Base, BaseMixin):
             "session_id": str(self.session_id),
             "role": self.role,
             "content": self.content,
+            "citations": self.citations,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }

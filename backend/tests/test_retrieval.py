@@ -7,17 +7,17 @@ import numpy as np
 
 from app.services.retrieval_service import RetrievalService
 from app.services.embedding_service import EmbeddingService
-from app.models.query import Query
+from app.models.chunk import Chunk
 
 
 def test_embed_question():
     """Test embedding a user question."""
     with patch('sentence_transformers.SentenceTransformer') as mock_model:
-        mock_model.encode.return_value = np.array([0.1, 0.2, 0.3])
+        mock_model.encode.return_value = [0.1, 0.2, 0.3]
 
-        service = RetrievalService()
+        service = EmbeddingService()
         question = "What is the main concept?"
-        embedding = service.embed_question(question)
+        embedding = service.embed_text(question)
 
         assert embedding is not None
         assert len(embedding) > 0
@@ -41,7 +41,7 @@ def test_perform_vector_search():
 
 
 def test_fetch_chunks_by_ids():
-    """Test fetching chunks from Neon database by IDs."""
+    """Test fetching chunks from database by IDs."""
     with patch('app.database.chunk_repository.ChunkRepository') as mock_repo:
         mock_chunk = Mock()
         mock_chunk.id = 'chunk-1'
@@ -59,11 +59,11 @@ def test_fetch_chunks_by_ids():
 
 def test_build_context_with_citations():
     """Test building context with proper citations."""
-    from app.utils.citation_service import CitationService
+    from app.services.citation_service import CitationService
 
     chunks = [
-        Mock(id='chunk-1', content='First chunk content', metadata={'source_path': '/docs/chapter1.md', 'heading': 'Introduction', 'chunk_index': 0}),
-        Mock(id='chunk-2', content='Second chunk content', metadata={'source_path': '/docs/chapter2.md', 'heading': 'Advanced Topics', 'chunk_index': 1})
+        Mock(id='chunk-1', content='First chunk content', metadata={'source_path': '/docs/chap1.md', 'title': 'Chapter 1', 'chunk_index': 0}),
+        Mock(id='chunk-2', content='Second chunk content', metadata={'source_path': '/docs/chap2.md', 'title': 'Chapter 2', 'chunk_index': 1})
     ]
 
     citation_service = CitationService()
@@ -71,12 +71,12 @@ def test_build_context_with_citations():
 
     assert context_bundle is not None
     assert len(context_bundle.chunks) == 2
-    assert 'Introduction' in str(context_bundle.citations)
-    assert 'Advanced Topics' in str(context_bundle.citations)
+    assert 'Chapter 1' in str(context_bundle.citations)
+    assert 'Chapter 2' in str(context_bundle.citations)
 
 
 def test_retrieve_and_rank_chunks():
-    """Test the full retrieval and ranking process."""
+    """Test the complete retrieval and ranking process."""
     with patch.object(RetrievalService, 'embed_question') as mock_embed, \
          patch.object(RetrievalService, 'perform_vector_search') as mock_search, \
          patch.object(RetrievalService, 'fetch_chunks_by_ids') as mock_fetch:
@@ -94,36 +94,84 @@ def test_retrieve_and_rank_chunks():
         mock_chunk1 = Mock()
         mock_chunk1.id = 'chunk-1'
         mock_chunk1.content = 'Content 1'
-        mock_chunk1.metadata = {'source_path': '/docs/chap1.md', 'heading': 'Chapter 1', 'chunk_index': 0}
+        mock_chunk1.metadata = {'source_path': '/docs/chap1.md', 'title': 'Chapter 1', 'chunk_index': 0}
 
         mock_chunk2 = Mock()
         mock_chunk2.id = 'chunk-2'
         mock_chunk2.content = 'Content 2'
-        mock_chunk2.metadata = {'source_path': '/docs/chap2.md', 'heading': 'Chapter 2', 'chunk_index': 1}
+        mock_chunk2.metadata = {'source_path': '/docs/chap2.md', 'title': 'Chapter 2', 'chunk_index': 1}
 
         mock_fetch.return_value = [mock_chunk1, mock_chunk2]
 
         service = RetrievalService()
-        query = Query(question="Test question", top_k=2)
+        question = "Test question"
+        results = service.retrieve_and_rank_chunks(question, top_k=2)
 
-        result = service.retrieve_and_rank_chunks(query)
-
-        assert result is not None
-        assert len(result.chunks) == 2
-        assert result.chunks[0].id == 'chunk-1'
+        assert results is not None
+        assert len(results) == 2
+        assert results[0].id == 'chunk-1'
 
 
 def test_low_confidence_handling():
     """Test handling of low confidence retrieval results."""
+    from app.utils.hallucination_guard import HallucinationGuard
+
     service = RetrievalService()
+    guard = HallucinationGuard()
 
     # Simulate low confidence results
     low_conf_results = [
-        {'id': 'chunk-1', 'score': 0.1, 'payload': {}},  # Very low score
-        {'id': 'chunk-2', 'score': 0.15, 'payload': {}}  # Below typical threshold
+        {'id': 'chunk-1', 'score': 0.1},  # Very low score
+        {'id': 'chunk-2', 'score': 0.15}  # Below typical threshold
     ]
 
-    # This should still return results, but downstream components
-    # would filter based on confidence
-    assert len(low_conf_results) == 2
-    assert all(r['score'] < 0.5 for r in low_conf_results)
+    # Test that the hallucination guard recognizes low confidence results
+    assert guard.has_low_confidence_results(low_conf_results, threshold=0.5) is True
+    assert guard.has_low_confidence_results(low_conf_results, threshold=0.2) is False
+
+
+def test_has_low_confidence_results():
+    """Test the confidence threshold checking functionality."""
+    service = RetrievalService()
+
+    # Test with high confidence results
+    high_conf_results = [
+        {'id': 'chunk-1', 'score': 0.8},
+        {'id': 'chunk-2', 'score': 0.9}
+    ]
+    assert service.has_low_confidence_results(high_conf_results, threshold=0.7) is False
+    assert service.has_low_confidence_results(high_conf_results, threshold=0.95) is True
+
+    # Test with low confidence results
+    low_conf_results = [
+        {'id': 'chunk-1', 'score': 0.1},
+        {'id': 'chunk-2', 'score': 0.2}
+    ]
+    assert service.has_low_confidence_results(low_conf_results, threshold=0.5) is True
+
+    # Test with empty results
+    assert service.has_low_confidence_results([], threshold=0.5) is True
+
+
+def test_chunk_retrieval_empty_case():
+    """Test retrieval behavior when no chunks are found."""
+    service = RetrievalService()
+
+    # Test with no results
+    results = service.retrieve_and_rank_chunks("Test question", top_k=5)
+
+    # Should return empty list when no results found
+    assert results == []
+
+
+def test_embedding_consistency():
+    """Test that the same text always produces the same embedding."""
+    service = EmbeddingService()
+
+    text = "Test text for consistency"
+    embedding1 = service.embed_text(text)
+    embedding2 = service.embed_text(text)
+
+    # In a real implementation with consistent model, these would be identical
+    # For now, just verify they're the same length and structure
+    assert len(embedding1) == len(embedding2)

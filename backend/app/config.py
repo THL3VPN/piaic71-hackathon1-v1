@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     qdrant_api_key: Optional[str] = None
 
     # Qdrant vector configuration
-    vector_size: int = 1536
+    vector_size: int = 384  # Changed to match all-MiniLM-L6-v2 model output
     distance_metric: str = "Cosine"
 
     # GitHub Pages origin for CORS
@@ -46,16 +46,16 @@ class Settings(BaseSettings):
     chunk_overlap: int = 200
     max_document_size: int = 10 * 1024 * 1024  # 10MB
     supported_extensions: List[str] = [".md", ".mdx"]
-    source_directory: str = "../book/docs"
+    source_directory: str = "/home/aie/all_data/piaic71-hackathon1-v1/book/docs"
     progress_refresh_rate: float = 0.1  # seconds
 
     # RAG Retrieval configuration
     top_k: int = 5
-    similarity_threshold: float = 0.5
+    similarity_threshold: float = 0.1
     max_context_length: int = 3000
-    vector_size: int = 1536
     chunk_size_limit: int = 1000
     chunk_overlap_default: int = 200
+    qdrant_collection_name: str = "documents"
 
     class Config:
         env_file = ".env"

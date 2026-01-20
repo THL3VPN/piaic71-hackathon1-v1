@@ -27,7 +27,8 @@ class ChunkService:
         chunk_index: int,
         chunk_text: str,
         chunk_hash: str,
-        metadata: Optional[dict] = None
+        metadata: Optional[dict] = None,
+        vector: Optional[list] = None
     ) -> Chunk:
         """
         Create a new chunk in the database.
@@ -39,6 +40,7 @@ class ChunkService:
             chunk_text: The actual content of the chunk
             chunk_hash: Hash for deduplication
             metadata: Optional metadata dictionary
+            vector: Optional embedding vector
 
         Returns:
             Chunk: Created chunk instance
@@ -46,11 +48,16 @@ class ChunkService:
         Raises:
             IntegrityError: If a chunk with the same hash already exists
         """
+        import json
+        # Serialize vector to JSON string for database storage
+        vector_json = json.dumps(vector) if vector is not None else None
+
         chunk = Chunk(
             document_id=document_id,
             chunk_index=chunk_index,
             chunk_text=chunk_text,
             chunk_hash=chunk_hash,
+            vector=vector_json,
             metadata=metadata
         )
         db.add(chunk)

@@ -34,7 +34,7 @@ class QdrantService:
                 port=settings.qdrant_port,
                 api_key=settings.qdrant_api_key
             )
-        self.collection_name = "book_chunks"
+        self.collection_name = settings.qdrant_collection_name
 
     def create_collection(self) -> bool:
         """

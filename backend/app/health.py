@@ -11,6 +11,8 @@ import httpx
 import logging
 
 from .config import settings
+from .dependencies import check_all_dependencies, check_qdrant_connectivity
+from .models.qdrant_models import QdrantHealthResponse, QdrantCollectionCheck
 
 router = APIRouter()
 
@@ -96,3 +98,51 @@ async def readiness_check() -> Dict[str, Any]:
 
     # Return the readiness response
     return readiness_response
+
+
+@router.get("/health/qdrant", summary="Qdrant Health Check", description="Checks if the Qdrant vector database is available and the collection exists.")
+async def qdrant_health_check() -> QdrantHealthResponse:
+    """
+    Qdrant-specific health check endpoint that verifies connectivity to Qdrant
+    and that the required collection exists.
+
+    Returns:
+        QdrantHealthResponse: Health status with Qdrant-specific details
+    """
+    logger.info("Qdrant health check endpoint accessed")
+
+    try:
+        # Check Qdrant connectivity and collection existence
+        is_connected, error_msg = check_qdrant_connectivity()  # Remove await since it's synchronous
+
+        if is_connected:
+            status = "healthy"
+            details = {
+                "qdrant_connected": True,
+                "collection_exists": True,
+                "collection_name": "book_chunks"
+            }
+        else:
+            status = "unhealthy"
+            details = {
+                "qdrant_connected": False,
+                "collection_exists": False,
+                "collection_name": "book_chunks",
+                "error": error_msg
+            }
+
+        return QdrantHealthResponse(
+            status=status,
+            details=details
+        )
+    except Exception as e:
+        logger.error(f"Qdrant health check failed: {str(e)}")
+        return QdrantHealthResponse(
+            status="unhealthy",
+            details={
+                "qdrant_connected": False,
+                "collection_exists": False,
+                "collection_name": "book_chunks",
+                "error": str(e)
+            }
+        )
