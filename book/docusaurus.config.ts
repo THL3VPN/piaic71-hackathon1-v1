@@ -5,8 +5,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'My Site',
-  tagline: 'Dinosaurs are cool',
+  title: 'PIAIC71-Hackathon1-v1 Book',
+  tagline: 'Physical AI & Humanoid Robotics Documentation',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -75,9 +75,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'My Site',
+      title: 'PIAIC71-Hackathon1-v1',
       logo: {
-        alt: 'My Site Logo',
+        alt: 'PIAIC71-Hackathon1-v1 Logo',
         src: 'img/logo.svg',
       },
       items: [

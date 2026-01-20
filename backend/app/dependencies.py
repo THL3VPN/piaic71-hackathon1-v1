@@ -10,6 +10,7 @@ from typing import Dict, Tuple, Optional
 import logging
 
 from .config import settings
+from .services.qdrant_service import qdrant_service
 
 # Configure logging
 logging.basicConfig(level=getattr(logging, settings.log_level.upper()))
@@ -48,29 +49,26 @@ async def check_neon_connectivity() -> Tuple[bool, Optional[str]]:
         return False, str(e)
 
 
-async def check_qdrant_connectivity() -> Tuple[bool, Optional[str]]:
+def check_qdrant_connectivity() -> Tuple[bool, Optional[str]]:
     """
     Check connectivity to Qdrant vector database.
 
     Returns:
         Tuple[bool, Optional[str]]: (is_connected, error_message)
     """
-    if not settings.qdrant_url:
-        return False, "Qdrant URL not configured"
-
     try:
-        # Attempt to connect to Qdrant health endpoint
-        async with httpx.AsyncClient(timeout=settings.request_timeout/1000) as client:
-            response = await client.get(f"{settings.qdrant_url}/healthz")
+        # Use the Qdrant service to validate connection
+        is_connected = qdrant_service.validate_connection()
 
-            if response.status_code == 200:
-                return True, None
-            else:
-                return False, f"Qdrant returned status {response.status_code}: {response.text}"
+        if is_connected:
+            # Also check if the collection exists
+            collection_exists = qdrant_service.check_collection_exists()
+            if not collection_exists:
+                return False, "Qdrant connected but collection 'book_chunks' does not exist"
+            return True, None
+        else:
+            return False, "Qdrant service not connected"
 
-    except httpx.RequestError as e:
-        logger.error(f"Qdrant connectivity request failed: {str(e)}")
-        return False, f"Request error: {str(e)}"
     except Exception as e:
         logger.error(f"Qdrant connectivity check failed: {str(e)}")
         return False, str(e)
@@ -86,8 +84,8 @@ async def check_all_dependencies() -> Dict[str, Dict[str, str]]:
     # Check Neon connectivity
     neon_connected, neon_error = await check_neon_connectivity()
 
-    # Check Qdrant connectivity
-    qdrant_connected, qdrant_error = await check_qdrant_connectivity()
+    # Check Qdrant connectivity (synchronous function)
+    qdrant_connected, qdrant_error = check_qdrant_connectivity()
 
     dependencies_status = {
         "neon": {

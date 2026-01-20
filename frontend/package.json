@@ -1,36 +1,48 @@
 {
-  "name": "frontend",
-  "version": "0.0.0",
-  "private": true,
+  "name": "frontend-chat-widget",
+  "version": "1.0.0",
+  "description": "Reusable chat widget for the PIAIC71-Hackathon1-v1 RAG system",
+  "main": "index.js",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "dev": "webpack serve --mode development --open",
+    "test": "jest",
+    "lint": "eslint src/"
   },
+  "keywords": [
+    "chat",
+    "widget",
+    "rag",
+    "ai",
+    "react",
+    "docusaurus"
+  ],
+  "author": "PIAIC71-Hackathon1-v1 Team",
+  "license": "MIT",
   "dependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-scripts": "5.1.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "typescript": "~5.6.2"
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "@babel/preset-react": "^7.22.0",
+    "babel-loader": "^9.1.0",
+    "css-loader": "^6.8.0",
+    "style-loader": "^3.3.0",
+    "file-loader": "^6.2.0",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.0",
+    "webpack-dev-server": "^4.15.0",
+    "html-webpack-plugin": "^5.5.0",
+    "jest": "^29.5.0",
+    "eslint": "^8.40.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-import": "^2.27.5"
   },
-  "browserslist": {
-    "production": [
-      ">0.5%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 3 chrome version",
-      "last 3 firefox version",
-      "last 5 safari version"
-    ]
-  },
-  "engines": {
-    "node": ">=20.0"
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
   }
 }

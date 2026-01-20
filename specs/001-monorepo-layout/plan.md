@@ -1,64 +1,44 @@
-# Implementation Plan: Monorepo Layout
+# Implementation Plan: [FEATURE]
 
-**Branch**: `001-monorepo-layout` | **Date**: 2025-12-30 | **Spec**: [link to spec.md]
-**Input**: Feature specification from `/specs/001-monorepo-layout/spec.md`
+**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
 **Note**: This template is filled in by the `/sp.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
 ## Summary
 
-This plan outlines the implementation of a monorepo layout for the PIAIC71-Hackathon1-v1 project. The monorepo will contain five main directories: `/book` for the Docusaurus documentation site, `/frontend` for reusable UI components, `/backend` for the FastAPI service, `/specs` for feature specifications, and `/adrs` for architecture decision records. The implementation will ensure the Docusaurus site can build and deploy to GitHub Pages, the backend can run locally with uv, and proper git ignore configurations are in place to secure secrets.
+[Extract from feature spec: primary requirement + technical approach from research]
 
 ## Technical Context
 
-**Language/Version**: Node.js >= 20.0, Python 3.11+ (based on constitution and project requirements)
-**Primary Dependencies**: Docusaurus 3.9.2 for documentation site, FastAPI for backend service, uv for local backend execution
-**Storage**: File-based storage for documentation and specs (no database required for this feature)
-**Testing**: pytest for backend testing, Docusaurus built-in testing capabilities
-**Target Platform**: Cross-platform (Linux, macOS, Windows) for development; GitHub Pages for documentation deployment
-**Project Type**: Monorepo with multiple components (web application with documentation, frontend components, backend service)
-**Performance Goals**: Fast local development setup (under 30 minutes), quick documentation builds (under 2 minutes)
-**Constraints**: Git must properly ignore secrets while maintaining configuration examples, all components must be independently deployable
+<!--
+  ACTION REQUIRED: Replace the content in this section with the technical details
+  for the project. The structure here is presented in advisory capacity to guide
+  the iteration process.
+-->
+
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: [single/web/mobile - determines source structure]  
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-### Pre-Design Compliance Verification
-
-1. **Spec-Driven Development (SDD)**: ✅ Plan is based on the feature specification in `/specs/001-monorepo-layout/spec.md` following the SDD methodology.
-
-2. **Prompt History Records (PHR) Compliance**: ✅ This planning process will be recorded in a PHR as required by the constitution.
-
-3. **Architectural Decision Record (ADR) Documentation**: ✅ The monorepo layout decision may warrant an ADR if it has long-term consequences for the project architecture.
-
-4. **Authoritative Source Mandate**: ✅ All technical decisions will be based on verified information about Docusaurus, FastAPI, and monorepo best practices.
-
-5. **Test-First and Quality Assurance**: ✅ The plan includes testing considerations for both backend (pytest) and documentation (Docusaurus capabilities).
-
-6. **Human-Centric Decision Making**: ✅ Any unclear requirements will be clarified with the development team before implementation.
-
-### Post-Design Compliance Verification
-
-1. **Spec-Driven Development (SDD)**: ✅ All design artifacts (research.md, data-model.md, quickstart.md, contracts/) align with the original feature specification.
-
-2. **Test-First and Quality Assurance**: ✅ Design includes testing strategies for backend (pytest) and documentation components with appropriate test directories in the structure.
-
-3. **Authoritative Source Mandate**: ✅ All technology choices (Docusaurus 3.9.2, FastAPI, uv) align with constitution requirements and industry best practices.
-
-4. **Human-Centric Decision Making**: ✅ Quickstart guide addresses developer experience and onboarding needs identified in the specification.
-
-### Gates Status
-- All constitutional principles satisfied both pre and post design
-- No violations detected
-- Plan ready for task generation phase
+[Gates determined based on constitution file]
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/001-monorepo-layout/
+specs/[###-feature]/
 ├── plan.md              # This file (/sp.plan command output)
 ├── research.md          # Phase 0 output (/sp.plan command)
 ├── data-model.md        # Phase 1 output (/sp.plan command)
@@ -68,42 +48,51 @@ specs/001-monorepo-layout/
 ```
 
 ### Source Code (repository root)
+<!--
+  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
+  for this feature. Delete unused options and expand the chosen structure with
+  real paths (e.g., apps/admin, packages/something). The delivered plan must
+  not include Option labels.
+-->
 
 ```text
-# Monorepo structure for documentation, frontend, and backend components
-/
-├── .gitignore              # Git configuration ignoring secrets
-├── .env.example            # Example environment file for backend
-├── book/                   # Docusaurus documentation site
-│   ├── docs/               # Documentation files
-│   ├── src/                # Custom React components
-│   ├── static/             # Static assets
-│   ├── docusaurus.config.js  # Docusaurus configuration
-│   ├── package.json        # Docusaurus project dependencies
-│   └── README.md           # Docusaurus site documentation
-├── frontend/               # Reusable UI components
-│   ├── components/         # Shared React components
-│   ├── styles/             # CSS/styling files
-│   ├── package.json        # Frontend project dependencies
-│   └── README.md           # Frontend component documentation
-├── backend/                # FastAPI service
-│   ├── src/                # Backend source code
-│   │   ├── main.py         # FastAPI application entry point
-│   │   ├── models/         # Data models
-│   │   ├── routes/         # API routes
-│   │   └── services/       # Business logic
-│   ├── tests/              # Backend tests
-│   ├── requirements.txt    # Python dependencies
-│   └── README.md           # Backend service documentation
-├── specs/                  # Feature specifications
-│   ├── 001-monorepo-layout/  # Current feature
-│   └── ...                 # Other feature specs
-└── adrs/                   # Architecture decision records
-    ├── 001-record-template.md  # ADR template
-    └── ...                 # Other ADRs
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
+
+tests/
+├── contract/
+├── integration/
+└── unit/
+
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: The monorepo will follow a multi-component structure with separate directories for documentation (book), frontend components, backend service, specifications, and architecture decision records. This structure enables independent development, testing, and deployment of each component while maintaining a unified codebase.
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
 ## Complexity Tracking
 
